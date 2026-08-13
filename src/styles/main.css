@@ -1,0 +1,101 @@
+:root {
+  --color-bg: #f5f7fa;
+  --color-card: #ffffff;
+  --color-border: #e4e7ed;
+  --color-text: #303133;
+  --color-text-secondary: #909399;
+  --color-primary: #409eff;
+  --color-success: #67c23a;
+  --color-danger: #f56c6c;
+  --color-warning: #e6a23c;
+  --sidebar-width: 220px;
+}
+
+[data-theme='dark'] {
+  --color-bg: #141414;
+  --color-card: #1d1e1f;
+  --color-border: #363637;
+  --color-text: #e5eaf3;
+  --color-text-secondary: #a3a6ad;
+  --color-primary: #409eff;
+}
+
+/* 深色主题下 Element Plus 组件细节适配 */
+[data-theme='dark'] .el-menu {
+  --el-menu-bg-color: var(--color-card);
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.06);
+  --el-menu-text-color: var(--color-text);
+  --el-menu-active-color: var(--color-primary);
+}
+[data-theme='dark'] .el-aside {
+  background: var(--color-card);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+}
+
+.page-container {
+  padding: 20px;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.card {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.money-income {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.money-expense {
+  color: var(--color-danger);
+  font-weight: 600;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.page-header h2 {
+  font-size: 18px;
+}
+
+.el-table {
+  --el-table-bg-color: var(--color-card);
+  --el-table-tr-bg-color: var(--color-card);
+  --el-table-header-bg-color: var(--color-bg);
+  --el-table-border-color: var(--color-border);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
