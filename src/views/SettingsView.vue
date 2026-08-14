@@ -18,6 +18,30 @@
         </div>
 
         <div class="card" style="margin-top: 16px">
+          <div class="card-title">账本币种</div>
+          <el-form label-width="80px">
+            <el-form-item label="基准币种">
+              <el-select
+                :model-value="ledgerCurrency"
+                style="width: 100%"
+                :disabled="!ledgerStore.currentId"
+                @change="changeLedgerCurrency"
+              >
+                <el-option
+                  v-for="c in currencyStore.currencies"
+                  :key="c.code"
+                  :label="`${c.code} ${c.name} (${c.symbol})`"
+                  :value="c.code"
+                />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="说明">
+              <span class="tip-text">报表、预算等汇总金额将换算为账本基准币种</span>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
           <div class="card-title">系统托盘</div>
           <el-form label-width="80px">
             <el-form-item label="启用托盘">
@@ -135,16 +159,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useAppStore } from '@/stores/app';
 import { useLedgerStore } from '@/stores/ledger';
 import { useTransactionStore } from '@/stores/transaction';
+import { useCurrencyStore } from '@/stores/currency';
 import type { Settings } from '@shared/types';
 
 const appStore = useAppStore();
 const ledgerStore = useLedgerStore();
 const transactionStore = useTransactionStore();
+const currencyStore = useCurrencyStore();
 
 const settings = ref<Settings | null>(null);
 const theme = ref<'light' | 'dark' | 'system'>('system');
@@ -163,6 +189,9 @@ const trayEnabled = ref(true);
 const closeToTray = ref(true);
 const minimizeToTray = ref(false);
 
+/** 当前账本基准币种 */
+const ledgerCurrency = computed(() => ledgerStore.current()?.currency ?? 'CNY');
+
 async function loadSettings() {
   settings.value = await window.moneyBook.system.getSettings();
   theme.value = settings.value.theme;
@@ -173,12 +202,26 @@ async function loadSettings() {
   trayEnabled.value = settings.value.tray_enabled;
   closeToTray.value = settings.value.close_to_tray;
   minimizeToTray.value = settings.value.minimize_to_tray;
+  await currencyStore.load();
 }
 
 function saveTheme() {
   appStore.applyTheme(theme.value === 'system' ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light') : theme.value);
   window.moneyBook.system.setSettings({ theme: theme.value });
   ElMessage.success('主题已更新');
+}
+
+/** 修改当前账本基准币种 */
+async function changeLedgerCurrency(code: string) {
+  const id = ledgerStore.currentId;
+  if (!id) return;
+  try {
+    await window.moneyBook.ledger.update(id, { currency: code });
+    await ledgerStore.load();
+    ElMessage.success('账本基准币种已更新');
+  } catch (e) {
+    ElMessage.error((e as Error).message);
+  }
 }
 
 function onLockChange(val: boolean) {

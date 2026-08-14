@@ -28,7 +28,7 @@
             </el-button>
           </el-tooltip>
         </div>
-        <el-button size="small" style="margin-top: 6px; width: 100%" @click="showCreateLedger = true">
+        <el-button size="small" style="margin-top: 6px; width: 100%" @click="openCreateLedger">
           ＋ 新建账本
         </el-button>
       </div>
@@ -50,6 +50,12 @@
         </el-menu-item>
         <el-menu-item index="/categories">
           <el-icon><Menu /></el-icon><span>分类</span>
+        </el-menu-item>
+        <el-menu-item index="/tags">
+          <el-icon><CollectionTag /></el-icon><span>标签</span>
+        </el-menu-item>
+        <el-menu-item index="/currencies">
+          <el-icon><Coin /></el-icon><span>货币汇率</span>
         </el-menu-item>
         <el-menu-item index="/recurring">
           <el-icon><Refresh /></el-icon><span>周期账单</span>
@@ -88,6 +94,16 @@
       <el-form-item label="图标">
         <EmojiPicker v-model="newLedgerIcon" placeholder="点击选择 Emoji" />
       </el-form-item>
+      <el-form-item label="基准币种">
+        <el-select v-model="newLedgerCurrency" style="width: 100%">
+          <el-option
+            v-for="c in currencyStore.currencies"
+            :key="c.code"
+            :label="`${c.code} ${c.name} (${c.symbol})`"
+            :value="c.code"
+          />
+        </el-select>
+      </el-form-item>
     </el-form>
     <template #footer>
       <el-button @click="showCreateLedger = false">取消</el-button>
@@ -110,6 +126,8 @@ import {
   Wallet,
   CreditCard,
   Menu,
+  CollectionTag,
+  Coin,
   Refresh,
   Setting,
   Delete,
@@ -117,6 +135,7 @@ import {
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
 import { useCategoryStore } from '@/stores/category';
+import { useCurrencyStore } from '@/stores/currency';
 import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
 import EmojiPicker from '@/components/EmojiPicker.vue';
 
@@ -125,6 +144,7 @@ const router = useRouter();
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
+const currencyStore = useCurrencyStore();
 
 const ledgerId = computed({
   get: () => ledgerStore.currentId ?? 0,
@@ -133,6 +153,7 @@ const ledgerId = computed({
 const showCreateLedger = ref(false);
 const newLedgerName = ref('');
 const newLedgerIcon = ref('📒');
+const newLedgerCurrency = ref('CNY');
 const showQuickAdd = ref(false);
 
 async function onSwitchLedger(id: number) {
@@ -146,12 +167,18 @@ async function refreshStores() {
   await Promise.all([accountStore.load(id), categoryStore.load(id)]);
 }
 
+/** 打开新建账本弹窗 */
+function openCreateLedger() {
+  newLedgerCurrency.value = ledgerStore.current()?.currency ?? 'CNY';
+  showCreateLedger.value = true;
+}
+
 async function onCreateLedger() {
   if (!newLedgerName.value.trim()) {
     ElMessage.warning('请输入账本名称');
     return;
   }
-  await ledgerStore.create(newLedgerName.value.trim(), newLedgerIcon.value);
+  await ledgerStore.create(newLedgerName.value.trim(), newLedgerIcon.value, newLedgerCurrency.value);
   newLedgerName.value = '';
   ElMessage.success('账本创建成功');
   showCreateLedger.value = false;
@@ -197,6 +224,7 @@ function onTrayQuickAdd() {
 }
 
 onMounted(async () => {
+  await currencyStore.load();
   await ledgerStore.load();
   if (ledgerStore.currentId) {
     await refreshStores();

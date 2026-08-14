@@ -11,26 +11,26 @@
       <el-col :span="6">
         <div class="card stat-card">
           <div class="stat-label">本月收入</div>
-          <div class="stat-value money-income">+{{ summary?.income_total.toFixed(2) ?? '0.00' }}</div>
+          <div class="stat-value money-income">+{{ baseSymbol }}{{ (summary?.income_total ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="card stat-card">
           <div class="stat-label">本月支出</div>
-          <div class="stat-value money-expense">-{{ summary?.expense_total.toFixed(2) ?? '0.00' }}</div>
+          <div class="stat-value money-expense">-{{ baseSymbol }}{{ (summary?.expense_total ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="card stat-card">
           <div class="stat-label">本月结余</div>
-          <div class="stat-value" :class="balanceClass">{{ (summary?.balance ?? 0).toFixed(2) }}</div>
+          <div class="stat-value" :class="balanceClass">{{ baseSymbol }}{{ (summary?.balance ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
       <el-col :span="6">
         <div class="card stat-card">
           <div class="stat-label">账户总数</div>
           <div class="stat-value">{{ accountStore.accounts.length }}</div>
-          <div class="stat-sub">总余额 ¥{{ totalBalance.toFixed(2) }}</div>
+          <div class="stat-sub">总余额 {{ baseSymbol }}{{ totalBalance.toFixed(2) }}</div>
         </div>
       </el-col>
     </el-row>
@@ -71,10 +71,11 @@
             </el-table-column>
             <el-table-column label="账户" prop="account_name" width="120" />
             <el-table-column prop="note" label="备注" show-overflow-tooltip />
-            <el-table-column label="金额" width="120" align="right">
+            <el-table-column label="金额" width="140" align="right">
               <template #default="{ row }">
                 <span :class="row.type === 2 ? 'money-income' : 'money-expense'">
                   {{ row.type === 2 ? '+' : '-' }}{{ row.amount.toFixed(2) }}
+                  <span class="currency-code">{{ row.currency }}</span>
                 </span>
               </template>
             </el-table-column>
@@ -93,12 +94,14 @@ import * as echarts from 'echarts';
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
 import { useCategoryStore } from '@/stores/category';
+import { useCurrencyStore } from '@/stores/currency';
 import type { ReportSummary, TransactionListItem } from '@shared/types';
 import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
 
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
+const currencyStore = useCurrencyStore();
 
 const summary = ref<ReportSummary | null>(null);
 const recent = ref<TransactionListItem[]>([]);
@@ -110,6 +113,11 @@ let pieChart: echarts.ECharts | null = null;
 
 const totalBalance = computed(() => accountStore.accounts.reduce((s, a) => s + (a.balance ?? 0), 0));
 const balanceClass = computed(() => (summary.value && summary.value.balance >= 0 ? 'money-income' : 'money-expense'));
+/** 报表基准币种符号（账本币种） */
+const baseSymbol = computed(() => {
+  const code = summary.value?.base_currency ?? 'CNY';
+  return currencyStore.get(code)?.symbol || code;
+});
 
 function typeText(t: number) {
   return { 1: '支出', 2: '收入', 3: '转账', 4: '调账' }[t] ?? '-';
@@ -121,6 +129,7 @@ async function refresh() {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth() + 1;
+  if (!currencyStore.currencies.length) await currencyStore.load();
   const [summaryData, listRes] = await Promise.all([
     window.moneyBook.report.summary(id, year, month),
     window.moneyBook.transaction.list({ ledger_id: id, page: 1, page_size: 8 }),
@@ -211,5 +220,10 @@ onUnmounted(() => {
   color: var(--color-text-secondary);
   text-align: center;
   padding: 60px 0;
+}
+.currency-code {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-left: 2px;
 }
 </style>

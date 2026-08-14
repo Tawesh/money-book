@@ -97,6 +97,8 @@ export interface TransactionQuery {
   start_date?: string;
   end_date?: string;
   keyword?: string;
+  /** 标签名（场景）筛选 */
+  tag?: string;
   page?: number;
   page_size?: number;
 }
@@ -163,12 +165,37 @@ export interface AccountStat {
 
 export interface ReportSummary {
   month: string;
+  /** 报表基准币种（账本币种） */
+  base_currency: string;
   income_total: number;
   expense_total: number;
   balance: number;
   by_category: CategoryStat[];
   daily_trend: DailyStat[];
   top_accounts: AccountStat[];
+}
+
+// ============ 货币与汇率 ============
+
+export interface Currency {
+  code: string;
+  name: string;
+  symbol: string;
+  /** 1 单位该货币 = rate 单位人民币(CNY) */
+  rate: number;
+  updated_at: string;
+}
+
+// ============ 标签 ============
+
+export interface Tag {
+  id: number;
+  ledger_id: number;
+  name: string;
+  icon: string;
+  created_at: string;
+  updated_at: string;
+  deleted: number;
 }
 
 // ============ 周期账单 ============
@@ -256,6 +283,19 @@ export interface MoneyBookApi {
     update: (id: number, data: Partial<RecurringRule>) => Promise<RecurringRule>;
     remove: (id: number) => Promise<void>;
     runDue: () => Promise<number>;
+  };
+  currency: {
+    list: () => Promise<Currency[]>;
+    add: (code: string, name: string, symbol: string, rate: number) => Promise<Currency>;
+    updateRate: (code: string, rate: number) => Promise<Currency>;
+    remove: (code: string) => Promise<void>;
+    convert: (amount: number, from: string, to: string) => Promise<number>;
+  };
+  tag: {
+    list: (ledgerId: number) => Promise<Tag[]>;
+    create: (data: { ledger_id: number; name: string; icon?: string }) => Promise<Tag>;
+    update: (id: number, data: { name?: string; icon?: string }) => Promise<Tag>;
+    remove: (id: number) => Promise<void>;
   };
   system: {
     getSettings: () => Promise<Settings>;

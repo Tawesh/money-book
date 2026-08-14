@@ -14,6 +14,8 @@ const router = createRouter({
         { path: 'budgets', name: 'budgets', component: () => import('@/views/BudgetsView.vue'), meta: { title: '预算' } },
         { path: 'accounts', name: 'accounts', component: () => import('@/views/AccountsView.vue'), meta: { title: '账户' } },
         { path: 'categories', name: 'categories', component: () => import('@/views/CategoriesView.vue'), meta: { title: '分类' } },
+        { path: 'tags', name: 'tags', component: () => import('@/views/TagsView.vue'), meta: { title: '标签' } },
+        { path: 'currencies', name: 'currencies', component: () => import('@/views/CurrenciesView.vue'), meta: { title: '货币汇率' } },
         { path: 'recurring', name: 'recurring', component: () => import('@/views/RecurringView.vue'), meta: { title: '周期账单' } },
         { path: 'settings', name: 'settings', component: () => import('@/views/SettingsView.vue'), meta: { title: '设置' } },
       ],

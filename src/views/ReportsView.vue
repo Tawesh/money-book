@@ -13,19 +13,19 @@
       <el-col :span="8">
         <div class="card stat-card">
           <div class="stat-label">收入</div>
-          <div class="stat-value money-income">+{{ summary?.income_total.toFixed(2) ?? '0.00' }}</div>
+          <div class="stat-value money-income">+{{ baseSymbol }}{{ (summary?.income_total ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
       <el-col :span="8">
         <div class="card stat-card">
           <div class="stat-label">支出</div>
-          <div class="stat-value money-expense">-{{ summary?.expense_total.toFixed(2) ?? '0.00' }}</div>
+          <div class="stat-value money-expense">-{{ baseSymbol }}{{ (summary?.expense_total ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
       <el-col :span="8">
         <div class="card stat-card">
           <div class="stat-label">结余</div>
-          <div class="stat-value" :class="balanceClass">{{ (summary?.balance ?? 0).toFixed(2) }}</div>
+          <div class="stat-value" :class="balanceClass">{{ baseSymbol }}{{ (summary?.balance ?? 0).toFixed(2) }}</div>
         </div>
       </el-col>
     </el-row>
@@ -55,7 +55,7 @@
               <template #default="{ row }">{{ row.icon }} {{ row.name }}</template>
             </el-table-column>
             <el-table-column label="金额" align="right">
-              <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+              <template #default="{ row }">{{ baseSymbol }}{{ row.amount.toFixed(2) }}</template>
             </el-table-column>
             <el-table-column label="占比" width="140">
               <template #default="{ row }">
@@ -72,7 +72,7 @@
           <el-table :data="summary?.top_accounts ?? []" size="small" stripe>
             <el-table-column prop="name" label="账户" />
             <el-table-column label="金额" align="right">
-              <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+              <template #default="{ row }">{{ baseSymbol }}{{ row.amount.toFixed(2) }}</template>
             </el-table-column>
           </el-table>
         </div>
@@ -85,9 +85,11 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import * as echarts from 'echarts';
 import { useLedgerStore } from '@/stores/ledger';
+import { useCurrencyStore } from '@/stores/currency';
 import type { ReportSummary } from '@shared/types';
 
 const ledgerStore = useLedgerStore();
+const currencyStore = useCurrencyStore();
 const summary = ref<ReportSummary | null>(null);
 const year = ref(new Date().getFullYear());
 const month = ref(new Date().getMonth() + 1);
@@ -97,10 +99,16 @@ let trendChart: echarts.ECharts | null = null;
 let pieChart: echarts.ECharts | null = null;
 
 const balanceClass = computed(() => (summary.value && summary.value.balance >= 0 ? 'money-income' : 'money-expense'));
+/** 报表基准币种符号（账本币种） */
+const baseSymbol = computed(() => {
+  const code = summary.value?.base_currency ?? 'CNY';
+  return currencyStore.get(code)?.symbol || code;
+});
 
 async function refresh() {
   const id = ledgerStore.currentId;
   if (!id) return;
+  if (!currencyStore.currencies.length) await currencyStore.load();
   summary.value = await window.moneyBook.report.summary(id, year.value, month.value);
   render();
 }

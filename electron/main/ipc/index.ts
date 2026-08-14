@@ -13,6 +13,8 @@ import * as budgetService from '../services/budget.service';
 import * as recurringService from '../services/recurring.service';
 import * as systemService from '../services/system.service';
 import * as trayService from '../services/tray.service';
+import * as currencyService from '../services/currency.service';
+import * as tagService from '../services/tag.service';
 
 function ok<T>(data: T): ApiResponse<T> {
   return { code: 0, message: 'ok', data };
@@ -125,6 +127,40 @@ export function registerIpcHandlers(): void {
     return recurringService.removeRecurringRule(id);
   });
   register('moneybook:recurring:runDue', () => recurringService.runDueRecurring());
+
+  // ===== 货币与汇率 =====
+  register('moneybook:currency:list', () => currencyService.listCurrencies());
+  register('moneybook:currency:add', (p) => {
+    const { code, name, symbol, rate } = p as { code: string; name: string; symbol: string; rate: number };
+    return currencyService.addCurrency(code, name, symbol, rate);
+  });
+  register('moneybook:currency:updateRate', (p) => {
+    const { code, rate } = p as { code: string; rate: number };
+    return currencyService.updateRate(code, rate);
+  });
+  register('moneybook:currency:remove', (p) => {
+    const { code } = p as { code: string };
+    return currencyService.removeCurrency(code);
+  });
+  register('moneybook:currency:convert', (p) => {
+    const { amount, from, to } = p as { amount: number; from: string; to: string };
+    return currencyService.convert(amount, from, to);
+  });
+
+  // ===== 标签 =====
+  register('moneybook:tag:list', (p) => {
+    const { ledger_id } = p as { ledger_id: number };
+    return tagService.listTags(ledger_id);
+  });
+  register('moneybook:tag:create', (p) => tagService.createTag(p as never));
+  register('moneybook:tag:update', (p) => {
+    const { id, data } = p as { id: number; data: { name?: string; icon?: string } };
+    return tagService.updateTag(id, data);
+  });
+  register('moneybook:tag:remove', (p) => {
+    const { id } = p as { id: number };
+    return tagService.removeTag(id);
+  });
 
   // ===== 系统 =====
   register('moneybook:system:getSettings', () => systemService.getSettings());

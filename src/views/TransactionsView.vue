@@ -38,6 +38,11 @@
         <el-form-item label="关键词">
           <el-input v-model="filters.keyword" placeholder="备注搜索" clearable style="width: 140px" @keyup.enter="load(1)" />
         </el-form-item>
+        <el-form-item label="标签">
+          <el-select v-model="filters.tag" placeholder="全部" clearable style="width: 130px" @change="load(1)">
+            <el-option v-for="t in tagStore.tags" :key="t.id" :label="`${t.icon} ${t.name}`" :value="t.name" />
+          </el-select>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="load(1)">查询</el-button>
           <el-button @click="resetFilters">重置</el-button>
@@ -68,10 +73,16 @@
           </template>
         </el-table-column>
         <el-table-column prop="note" label="备注" show-overflow-tooltip />
-        <el-table-column label="金额" width="130" align="right">
+        <el-table-column label="标签" width="150">
+          <template #default="{ row }">
+            <el-tag v-for="t in row.tags" :key="t" size="small" class="tag-item">{{ t }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="金额" width="150" align="right">
           <template #default="{ row }">
             <span :class="row.type === 2 ? 'money-income' : row.type === 1 ? 'money-expense' : ''">
               {{ row.type === 2 ? '+' : row.type === 1 ? '-' : '' }}{{ row.amount.toFixed(2) }}
+              <span class="currency-code">{{ row.currency }}</span>
             </span>
           </template>
         </el-table-column>
@@ -113,6 +124,7 @@ import { ElMessage } from 'element-plus';
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
 import { useCategoryStore } from '@/stores/category';
+import { useTagStore } from '@/stores/tag';
 import { useTransactionStore } from '@/stores/transaction';
 import type { TransactionListItem } from '@shared/types';
 import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
@@ -120,6 +132,7 @@ import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
+const tagStore = useTagStore();
 const store = useTransactionStore();
 
 const filters = reactive<{
@@ -127,6 +140,7 @@ const filters = reactive<{
   account_id?: number;
   category_id?: number;
   keyword?: string;
+  tag?: string;
 }>({});
 const dateRange = ref<[string, string] | null>(null);
 const showQuickAdd = ref(false);
@@ -147,6 +161,7 @@ async function load(page = store.page) {
     account_id: filters.account_id,
     category_id: filters.category_id,
     keyword: filters.keyword || undefined,
+    tag: filters.tag || undefined,
     start_date: dateRange.value?.[0],
     end_date: dateRange.value?.[1],
   });
@@ -157,6 +172,7 @@ function resetFilters() {
   filters.account_id = undefined;
   filters.category_id = undefined;
   filters.keyword = '';
+  filters.tag = undefined;
   dateRange.value = null;
   load(1);
 }
@@ -176,7 +192,11 @@ async function removeRow(id: number) {
   }
 }
 
-onMounted(() => load(1));
+onMounted(async () => {
+  const id = ledgerStore.currentId;
+  if (id) await tagStore.load(id);
+  load(1);
+});
 </script>
 
 <style scoped>
@@ -190,5 +210,13 @@ onMounted(() => load(1));
 }
 .transfer-to {
   color: var(--color-text-secondary);
+}
+.tag-item {
+  margin-right: 4px;
+}
+.currency-code {
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  margin-left: 2px;
 }
 </style>

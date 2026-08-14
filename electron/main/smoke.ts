@@ -149,6 +149,47 @@ export function runSmokeTest(): void {
   const backup = systemService.createBackup();
   check('创建备份', backup.size > 0);
 
+  // 16. 货币与汇率：列表/换算/新增/更新/删除
+  const currencyService = require('./services/currency.service');
+  const currencies = currencyService.listCurrencies();
+  check('货币列表含 CNY/USD', currencies.some((c: { code: string }) => c.code === 'CNY') && currencies.some((c: { code: string }) => c.code === 'USD'));
+  const conv = currencyService.convert(100, 'USD', 'CNY');
+  check('汇率换算 100 USD = 720 CNY', Math.abs(conv - 720) < 0.01, `got=${conv}`);
+  const conv2 = currencyService.convert(720, 'CNY', 'USD');
+  check('反向换算 720 CNY = 100 USD', Math.abs(conv2 - 100) < 0.01, `got=${conv2}`);
+  currencyService.addCurrency('TST', '测试币', 'T', 2);
+  const convTest = currencyService.convert(10, 'TST', 'CNY');
+  check('新增货币换算 10 TST = 20 CNY', Math.abs(convTest - 20) < 0.01, `got=${convTest}`);
+  currencyService.updateRate('TST', 3);
+  const convTest2 = currencyService.convert(10, 'TST', 'CNY');
+  check('更新汇率后 10 TST = 30 CNY', Math.abs(convTest2 - 30) < 0.01, `got=${convTest2}`);
+  currencyService.removeCurrency('TST');
+  const testGone = currencyService.listCurrencies().some((c: { code: string }) => c.code === 'TST');
+  check('删除测试货币', !testGone);
+
+  // 17. 标签：预置/创建/更新/删除
+  const tagService = require('./services/tag.service');
+  const seededTags = tagService.listTags(ledger.id);
+  check('新账本预置默认标签', seededTags.length >= 8, `count=${seededTags.length}`);
+  const tag = tagService.createTag({ ledger_id: ledger.id, name: '出差', icon: '🏢' });
+  check('创建标签', tag.id > 0 && tag.name === '出差');
+  const tagUpdated = tagService.updateTag(tag.id, { name: '商务出差' });
+  check('更新标签', tagUpdated.name === '商务出差');
+  const txnWithTag = transactionService.createTransaction({
+    ledger_id: ledger.id,
+    account_id: cash.id,
+    category_id: expenseCat.id,
+    type: 1,
+    amount: 66,
+    note: '机票',
+    tags: ['商务出差'],
+  });
+  check('流水携带标签', (txnWithTag.tags ?? []).includes('商务出差'));
+  const tagFiltered = transactionService.listTransactions({ ledger_id: ledger.id, tag: '商务出差', page: 1, page_size: 20 });
+  check('按标签筛选流水', tagFiltered.total >= 1 && tagFiltered.items[0]?.note === '机票', `total=${tagFiltered.total}`);
+  tagService.removeTag(tag.id);
+  check('删除标签', !tagService.listTags(ledger.id).some((t: { id: number }) => t.id === tag.id));
+
   console.log(failed === 0 ? '=== ✅ 全部冒烟测试通过 ===' : `=== ❌ ${failed} 项测试失败 ===`);
   // eslint-disable-next-line no-process-exit
   process.exit(failed === 0 ? 0 : 1);

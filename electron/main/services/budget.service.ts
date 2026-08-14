@@ -3,6 +3,7 @@
  */
 import { getDb, now } from '../db/database';
 import type { Budget, BudgetItem, BudgetWithUsage } from '../../shared/types';
+import { baseCurrencyOf, getCurrency } from './currency.service';
 
 export interface BudgetSaveInput {
   ledger_id: number;
@@ -25,10 +26,15 @@ export function getBudgetWithUsage(ledgerId: number, year: number, month: number
     .all(budget.id) as BudgetItem[];
 
   const monthStr = `${year}-${String(month).padStart(2, '0')}`;
+  const baseCode = baseCurrencyOf(ledgerId);
+  const base = getCurrency(baseCode);
+  const baseRate = base?.rate && base.rate > 0 ? base.rate : 1;
+  const toBase = `(t.amount * COALESCE(cr.rate, 1) / ${baseRate})`;
   const used = db
     .prepare(
-      `SELECT COALESCE(SUM(amount), 0) AS total FROM transactions
-       WHERE ledger_id = ? AND type = 1 AND happened_at BETWEEN ? AND ?`
+      `SELECT COALESCE(SUM(${toBase}), 0) AS total FROM transactions t
+       LEFT JOIN currency cr ON cr.code = t.currency
+       WHERE t.ledger_id = ? AND t.type = 1 AND t.happened_at BETWEEN ? AND ?`
     )
     .get(ledgerId, `${monthStr}-01`, `${monthStr}-31`) as { total: number };
 

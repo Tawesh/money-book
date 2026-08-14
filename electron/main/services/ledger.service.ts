@@ -3,6 +3,7 @@
  */
 import { getDb, now, seedCategories } from '../db/database';
 import type { Ledger } from '../../shared/types';
+import { seedDefaultTags } from './tag.service';
 
 export interface LedgerInput {
   name: string;
@@ -27,8 +28,9 @@ export function createLedger(input: LedgerInput): Ledger {
     )
     .run(input.name, input.icon ?? '📒', input.currency ?? 'CNY', ts, ts);
   const id = Number(result.lastInsertRowid);
-  // 新账本自动预置默认分类
+  // 新账本自动预置默认分类与场景标签
   seedCategories(id);
+  seedDefaultTags(id);
   return getLedger(id)!;
 }
 

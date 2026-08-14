@@ -79,6 +79,10 @@ export function listTransactions(query: TransactionQuery): PagedResult<Transacti
     where.push('t.note LIKE @keyword');
     params.keyword = `%${query.keyword}%`;
   }
+  if (query.tag) {
+    where.push('t.tags LIKE @tag');
+    params.tag = `%"${query.tag}"%`;
+  }
 
   const whereSql = where.join(' AND ');
   const total = (

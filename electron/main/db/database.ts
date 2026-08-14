@@ -121,6 +121,44 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+  // ---- v2：多币种汇率 + 标签管理 ----
+  `
+  CREATE TABLE IF NOT EXISTS currency (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    symbol TEXT DEFAULT '',
+    rate REAL NOT NULL DEFAULT 1,
+    updated_at TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS tag (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ledger_id INTEGER NOT NULL REFERENCES ledger(id),
+    name TEXT NOT NULL,
+    icon TEXT DEFAULT '🏷️',
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    deleted INTEGER DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS idx_tag_ledger ON tag(ledger_id, deleted);
+
+  INSERT OR IGNORE INTO currency (code, name, symbol, rate, updated_at) VALUES
+    ('CNY', '人民币', '¥', 1.0, '2025-01-01 00:00:00'),
+    ('USD', '美元', '$', 7.2, '2025-01-01 00:00:00'),
+    ('EUR', '欧元', '€', 7.85, '2025-01-01 00:00:00'),
+    ('JPY', '日元', '¥', 0.048, '2025-01-01 00:00:00'),
+    ('HKD', '港币', 'HK$', 0.92, '2025-01-01 00:00:00'),
+    ('GBP', '英镑', '£', 9.1, '2025-01-01 00:00:00'),
+    ('KRW', '韩元', '₩', 0.0052, '2025-01-01 00:00:00'),
+    ('SGD', '新加坡元', 'S$', 5.35, '2025-01-01 00:00:00'),
+    ('AUD', '澳元', 'A$', 4.7, '2025-01-01 00:00:00'),
+    ('CAD', '加元', 'C$', 5.2, '2025-01-01 00:00:00'),
+    ('THB', '泰铢', '฿', 0.2, '2025-01-01 00:00:00'),
+    ('CHF', '瑞士法郎', 'Fr', 8.1, '2025-01-01 00:00:00'),
+    ('RUB', '卢布', '₽', 0.078, '2025-01-01 00:00:00'),
+    ('TWD', '新台币', 'NT$', 0.22, '2025-01-01 00:00:00'),
+    ('MOP', '澳门元', 'MOP$', 0.89, '2025-01-01 00:00:00');
+  `,
 ];
 
 /** 默认支出/收入分类 */
@@ -144,6 +182,18 @@ export const DEFAULT_CATEGORIES = {
     { name: '其他', icon: '📦' },
   ],
 };
+
+/** 默认场景标签（新账本自动预置，可按需增删） */
+export const DEFAULT_TAGS = [
+  { name: '通勤', icon: '🚇' },
+  { name: '聚餐', icon: '🍽️' },
+  { name: '旅行', icon: '✈️' },
+  { name: '家庭', icon: '👨‍👩‍👧' },
+  { name: '工作', icon: '💼' },
+  { name: '健康', icon: '🏥' },
+  { name: '学习', icon: '📖' },
+  { name: '娱乐', icon: '🎬' },
+];
 
 /** 为新账本插入默认分类 */
 export function seedCategories(ledgerId: number): void {

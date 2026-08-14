@@ -51,6 +51,19 @@ const api: MoneyBookApi = {
     remove: (id) => invoke('moneybook:recurring:remove', { id }),
     runDue: () => invoke('moneybook:recurring:runDue'),
   },
+  currency: {
+    list: () => invoke('moneybook:currency:list'),
+    add: (code, name, symbol, rate) => invoke('moneybook:currency:add', { code, name, symbol, rate }),
+    updateRate: (code, rate) => invoke('moneybook:currency:updateRate', { code, rate }),
+    remove: (code) => invoke('moneybook:currency:remove', { code }),
+    convert: (amount, from, to) => invoke('moneybook:currency:convert', { amount, from, to }),
+  },
+  tag: {
+    list: (ledgerId) => invoke('moneybook:tag:list', { ledger_id: ledgerId }),
+    create: (data) => invoke('moneybook:tag:create', data),
+    update: (id, data) => invoke('moneybook:tag:update', { id, data }),
+    remove: (id) => invoke('moneybook:tag:remove', { id }),
+  },
   system: {
     getSettings: () => invoke('moneybook:system:getSettings'),
     setSettings: (data) => invoke('moneybook:system:setSettings', data),

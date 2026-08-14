@@ -17,8 +17,8 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="金额" width="120" align="right">
-          <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+        <el-table-column label="金额" width="130" align="right">
+          <template #default="{ row }">{{ baseSymbol }}{{ row.amount.toFixed(2) }}</template>
         </el-table-column>
         <el-table-column label="账户" width="120">
           <template #default="{ row }">{{ accountName(row.account_id) }}</template>
@@ -103,11 +103,13 @@ import { ElMessage } from 'element-plus';
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
 import { useCategoryStore } from '@/stores/category';
+import { useCurrencyStore } from '@/stores/currency';
 import type { RecurringRule, RecurringFrequency } from '@shared/types';
 
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
+const currencyStore = useCurrencyStore();
 
 const rules = ref<RecurringRule[]>([]);
 const showDialog = ref(false);
@@ -128,6 +130,10 @@ const kindCategories = computed(() =>
   categoryStore.categories.filter((c) => c.kind === (form.type === 2 ? 'income' : 'expense') && !c.parent_id)
 );
 
+/** 账本基准币种 */
+const baseCode = computed(() => ledgerStore.current()?.currency ?? 'CNY');
+const baseSymbol = computed(() => currencyStore.get(baseCode.value)?.symbol || baseCode.value);
+
 function accountName(id: number) {
   return accountStore.accounts.find((a) => a.id === id)?.name ?? '-';
 }
@@ -141,6 +147,7 @@ function freqText(f: string) {
 async function refresh() {
   const id = ledgerStore.currentId;
   if (!id) return;
+  if (!currencyStore.currencies.length) await currencyStore.load();
   rules.value = await window.moneyBook.recurring.list(id);
 }
 

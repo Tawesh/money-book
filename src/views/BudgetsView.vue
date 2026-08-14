@@ -13,17 +13,17 @@
     <el-row :gutter="16">
       <el-col :span="8">
         <div class="card budget-card">
-          <div class="budget-label">总预算</div>
-          <div class="budget-amount">¥{{ budget?.total_amount.toFixed(2) ?? '0.00' }}</div>
+          <div class="budget-label">总预算（{{ baseCode }}）</div>
+          <div class="budget-amount">{{ baseSymbol }}{{ budget?.total_amount.toFixed(2) ?? '0.00' }}</div>
           <el-progress
             :percentage="usagePercent"
             :status="usagePercent >= 100 ? 'exception' : usagePercent >= 80 ? 'warning' : 'success'"
             :stroke-width="12"
           />
           <div class="budget-sub">
-            已用 ¥{{ budget?.used_amount.toFixed(2) ?? '0.00' }}
+            已用 {{ baseSymbol }}{{ budget?.used_amount.toFixed(2) ?? '0.00' }}
             <span v-if="budget" :class="remainingClass">
-              剩余 ¥{{ (budget.total_amount - budget.used_amount).toFixed(2) }}
+              剩余 {{ baseSymbol }}{{ (budget.total_amount - budget.used_amount).toFixed(2) }}
             </span>
           </div>
         </div>
@@ -38,11 +38,11 @@
                 <template #default="{ row }">{{ categoryIcon(row.category_id) }} {{ categoryName(row.category_id) }}</template>
               </el-table-column>
               <el-table-column label="预算金额" align="right" width="140">
-                <template #default="{ row }">¥{{ row.amount.toFixed(2) }}</template>
+                <template #default="{ row }">{{ baseSymbol }}{{ row.amount.toFixed(2) }}</template>
               </el-table-column>
               <el-table-column label="已用金额" align="right" width="140">
                 <template #default="{ row }">
-                  <span class="money-expense">¥{{ itemUsage(row.category_id).toFixed(2) }}</span>
+                  <span class="money-expense">{{ baseSymbol }}{{ itemUsage(row.category_id).toFixed(2) }}</span>
                 </template>
               </el-table-column>
             </el-table>
@@ -79,10 +79,12 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useLedgerStore } from '@/stores/ledger';
 import { useCategoryStore } from '@/stores/category';
+import { useCurrencyStore } from '@/stores/currency';
 import type { BudgetWithUsage } from '@shared/types';
 
 const ledgerStore = useLedgerStore();
 const categoryStore = useCategoryStore();
+const currencyStore = useCurrencyStore();
 
 const budget = ref<BudgetWithUsage | null>(null);
 const year = ref(new Date().getFullYear());
@@ -102,6 +104,10 @@ const remainingClass = computed(() => {
   return budget.value.total_amount - budget.value.used_amount >= 0 ? 'money-income' : 'money-expense';
 });
 
+/** 账本基准币种 */
+const baseCode = computed(() => ledgerStore.current()?.currency ?? 'CNY');
+const baseSymbol = computed(() => currencyStore.get(baseCode.value)?.symbol || baseCode.value);
+
 function categoryName(id: number) {
   return categoryStore.categories.find((c) => c.id === id)?.name ?? '-';
 }
@@ -117,6 +123,7 @@ function itemUsage(categoryId: number) {
 async function refresh() {
   const id = ledgerStore.currentId;
   if (!id) return;
+  if (!currencyStore.currencies.length) await currencyStore.load();
   budget.value = await window.moneyBook.budget.get(id, year.value, month.value);
 }
 

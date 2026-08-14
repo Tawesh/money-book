@@ -23,7 +23,9 @@
         placeholder="0.00"
         @keyup.enter="submit"
       />
-      <span class="currency">{{ form.currency }}</span>
+      <el-select v-model="form.currency" size="large" style="width: 110px">
+        <el-option v-for="c in currencyOptions" :key="c.code" :label="`${c.code}`" :value="c.code" />
+      </el-select>
     </div>
 
     <!-- 分类（转账时隐藏） -->
@@ -46,13 +48,13 @@
     <!-- 账户 -->
     <el-form label-width="70px" class="form-fields">
       <el-form-item v-if="form.type !== 3" label="账户">
-        <el-select v-model="form.account_id" placeholder="选择账户" style="width: 100%">
-          <el-option v-for="a in accounts" :key="a.id" :label="`${a.icon} ${a.name}`" :value="a.id" />
+        <el-select v-model="form.account_id" placeholder="选择账户" style="width: 100%" @change="onAccountChange">
+          <el-option v-for="a in accounts" :key="a.id" :label="`${a.icon} ${a.name} (${a.currency})`" :value="a.id" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="form.type === 3" label="转出账户">
-        <el-select v-model="form.account_id" placeholder="选择转出账户" style="width: 100%">
-          <el-option v-for="a in accounts" :key="a.id" :label="`${a.icon} ${a.name}`" :value="a.id" />
+        <el-select v-model="form.account_id" placeholder="选择转出账户" style="width: 100%" @change="onAccountChange">
+          <el-option v-for="a in accounts" :key="a.id" :label="`${a.icon} ${a.name} (${a.currency})`" :value="a.id" />
         </el-select>
       </el-form-item>
       <el-form-item v-if="form.type === 3" label="转入账户">
@@ -72,6 +74,19 @@
       <el-form-item label="备注">
         <el-input v-model="form.note" placeholder="选填" maxlength="100" />
       </el-form-item>
+      <el-form-item label="标签">
+        <el-select
+          v-model="form.tags"
+          multiple
+          collapse-tags
+          collapse-tags-tooltip
+          placeholder="选择场景标签"
+          style="width: 100%"
+          clearable
+        >
+          <el-option v-for="t in tagStore.tags" :key="t.id" :label="`${t.icon} ${t.name}`" :value="t.name" />
+        </el-select>
+      </el-form-item>
     </el-form>
 
     <template #footer>
@@ -89,6 +104,8 @@ import { ElMessage } from 'element-plus';
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
 import { useCategoryStore } from '@/stores/category';
+import { useTagStore } from '@/stores/tag';
+import { useCurrencyStore } from '@/stores/currency';
 import type { TransactionListItem, TransactionType } from '@shared/types';
 
 const props = defineProps<{
@@ -100,9 +117,14 @@ const emit = defineEmits<{ close: [] }>();
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
+const tagStore = useTagStore();
+const currencyStore = useCurrencyStore();
 
 const accounts = computed(() => accountStore.accounts);
 const categories = computed(() => categoryStore.categories);
+const currencyOptions = computed(() =>
+  currencyStore.currencies.length ? currencyStore.currencies : [{ code: 'CNY' }]
+);
 
 const editing = computed(() => !!props.transaction);
 
@@ -117,6 +139,7 @@ const form = reactive({
   happened_at: '',
   note: '',
   currency: 'CNY',
+  tags: [] as string[],
 });
 
 const categoryOptions = computed(() => {
@@ -124,13 +147,21 @@ const categoryOptions = computed(() => {
   return categories.value.filter((c) => c.kind === kind && !c.parent_id);
 });
 
+/** 切换账户时，若该账户有独立币种则同步币种选择 */
+function onAccountChange(accountId: number) {
+  const acc = accounts.value.find((a) => a.id === accountId);
+  if (acc?.currency) form.currency = acc.currency;
+}
+
 function nowStr(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
 }
 
-onMounted(() => {
+onMounted(async () => {
+  await currencyStore.load();
+  await tagStore.load(ledgerStore.currentId!);
   if (props.transaction) {
     // 编辑模式：回填数据
     form.type = props.transaction.type;
@@ -140,6 +171,7 @@ onMounted(() => {
     form.happened_at = props.transaction.happened_at;
     form.note = props.transaction.note;
     form.currency = props.transaction.currency;
+    form.tags = [...(props.transaction.tags ?? [])];
     amountText.value = String(props.transaction.amount);
   } else {
     // 新增模式：默认值
@@ -147,6 +179,9 @@ onMounted(() => {
     form.happened_at = nowStr();
     if (accounts.value.length) form.account_id = accounts.value[0].id;
     if (categoryOptions.value.length) form.category_id = categoryOptions.value[0].id;
+    // 默认币种跟随账户币种
+    const acc = accounts.value.find((a) => a.id === form.account_id);
+    if (acc?.currency) form.currency = acc.currency;
   }
 });
 
@@ -188,6 +223,7 @@ async function submit() {
     currency: form.currency,
     happened_at: form.happened_at,
     note: form.note,
+    tags: form.tags,
   };
 
   saving.value = true;

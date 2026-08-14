@@ -13,7 +13,7 @@
             <span class="account-name">{{ a.name }}</span>
             <el-tag size="small" type="info">{{ typeText(a.type) }}</el-tag>
           </div>
-          <div class="account-balance">¥{{ (a.balance ?? 0).toFixed(2) }}</div>
+          <div class="account-balance">{{ currencySymbol(a.currency) }}{{ (a.balance ?? 0).toFixed(2) }}</div>
           <div class="account-actions">
             <el-button link type="primary" size="small" @click="openEdit(a)">编辑</el-button>
             <el-popconfirm title="确认删除该账户？" @confirm="removeAccount(a.id)">
@@ -44,6 +44,11 @@
         <el-form-item label="期初余额">
           <el-input-number v-model="form.balance" :precision="2" :step="100" style="width: 200px" />
         </el-form-item>
+        <el-form-item label="币种">
+          <el-select v-model="form.currency" style="width: 100%">
+            <el-option v-for="c in currencyStore.currencies" :key="c.code" :label="`${c.code} ${c.name}`" :value="c.code" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="showDialog = false">取消</el-button>
@@ -58,11 +63,13 @@ import { onMounted, reactive, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { useLedgerStore } from '@/stores/ledger';
 import { useAccountStore } from '@/stores/account';
+import { useCurrencyStore } from '@/stores/currency';
 import type { Account } from '@shared/types';
 import EmojiPicker from '@/components/EmojiPicker.vue';
 
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
+const currencyStore = useCurrencyStore();
 
 const accountTypes = [
   { value: 'cash', label: '现金' },
@@ -80,10 +87,16 @@ const form = reactive({
   type: 'other' as Account['type'],
   icon: '💳',
   balance: 0,
+  currency: 'CNY',
 });
 
 function typeText(t: string) {
   return accountTypes.find((x) => x.value === t)?.label ?? t;
+}
+
+function currencySymbol(code: string): string {
+  const c = currencyStore.get(code);
+  return c?.symbol || code;
 }
 
 function openCreate() {
@@ -92,6 +105,7 @@ function openCreate() {
   form.type = 'other';
   form.icon = '💳';
   form.balance = 0;
+  form.currency = 'CNY';
   showDialog.value = true;
 }
 
@@ -101,6 +115,7 @@ function openEdit(a: Account) {
   form.type = a.type;
   form.icon = a.icon;
   form.balance = a.balance;
+  form.currency = a.currency;
   showDialog.value = true;
 }
 
@@ -113,7 +128,7 @@ async function save() {
   if (!id) return;
   try {
     if (editing.value) {
-      await accountStore.update(editing.value.id, { name: form.name, type: form.type, icon: form.icon });
+      await accountStore.update(editing.value.id, { name: form.name, type: form.type, icon: form.icon, currency: form.currency });
     } else {
       await accountStore.create({
         ledger_id: id,
@@ -121,6 +136,7 @@ async function save() {
         type: form.type,
         icon: form.icon,
         balance: form.balance,
+        currency: form.currency,
       });
     }
     ElMessage.success('保存成功');
@@ -136,6 +152,7 @@ async function removeAccount(id: number) {
 }
 
 onMounted(async () => {
+  await currencyStore.load();
   const id = ledgerStore.currentId;
   if (id) await accountStore.load(id);
 });
