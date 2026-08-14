@@ -18,6 +18,26 @@
         </div>
 
         <div class="card" style="margin-top: 16px">
+          <div class="card-title">系统托盘</div>
+          <el-form label-width="80px">
+            <el-form-item label="启用托盘">
+              <el-switch v-model="trayEnabled" @change="saveSettings" />
+              <span class="tip-text">在系统托盘显示图标，方便快速记账</span>
+            </el-form-item>
+            <template v-if="trayEnabled">
+              <el-form-item label="关闭时">
+                <el-switch v-model="closeToTray" @change="saveSettings" />
+                <span class="tip-text">点击窗口关闭按钮时最小化到托盘（而非退出）</span>
+              </el-form-item>
+              <el-form-item label="最小化时">
+                <el-switch v-model="minimizeToTray" @change="saveSettings" />
+                <span class="tip-text">最小化窗口时隐藏到托盘</span>
+              </el-form-item>
+            </template>
+          </el-form>
+        </div>
+
+        <div class="card" style="margin-top: 16px">
           <div class="card-title">应用锁</div>
           <el-form label-width="80px">
             <el-form-item label="状态">
@@ -139,6 +159,9 @@ const backupEnabled = ref(true);
 const backupDir = ref('');
 const backups = ref<string[]>([]);
 const version = ref('1.0.2');
+const trayEnabled = ref(true);
+const closeToTray = ref(true);
+const minimizeToTray = ref(false);
 
 async function loadSettings() {
   settings.value = await window.moneyBook.system.getSettings();
@@ -147,6 +170,9 @@ async function loadSettings() {
   backupEnabled.value = settings.value.backup_enabled;
   backupDir.value = settings.value.backup_dir;
   version.value = await window.moneyBook.system.getVersion();
+  trayEnabled.value = settings.value.tray_enabled;
+  closeToTray.value = settings.value.close_to_tray;
+  minimizeToTray.value = settings.value.minimize_to_tray;
 }
 
 function saveTheme() {
@@ -204,7 +230,12 @@ function lockNow() {
 }
 
 function saveSettings() {
-  window.moneyBook.system.setSettings({ backup_enabled: backupEnabled.value });
+  window.moneyBook.system.setSettings({
+    backup_enabled: backupEnabled.value,
+    tray_enabled: trayEnabled.value,
+    close_to_tray: closeToTray.value,
+    minimize_to_tray: minimizeToTray.value,
+  });
 }
 
 async function chooseBackupDir() {

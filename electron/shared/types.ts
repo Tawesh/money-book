@@ -208,6 +208,12 @@ export interface Settings {
   backup_dir: string;
   backup_enabled: boolean;
   last_ledger_id: number | null;
+  /** 是否启用系统托盘 */
+  tray_enabled: boolean;
+  /** 点击窗口关闭按钮时最小化到托盘（而非退出） */
+  close_to_tray: boolean;
+  /** 最小化时最小化到托盘 */
+  minimize_to_tray: boolean;
 }
 
 // ============ 前置 API 定义（渲染进程通过 window.moneyBook 调用） ============
@@ -263,5 +269,9 @@ export interface MoneyBookApi {
     selectFile: (filters: { name: string; extensions: string[] }[]) => Promise<string | null>;
     selectDirectory: () => Promise<string | null>;
     getVersion: () => Promise<string>;
+  };
+  tray: {
+    /** 监听托盘“快速记账”：显示主窗口并跳转到记账页。返回取消监听函数 */
+    onQuickAdd: (callback: () => void) => () => void;
   };
 }

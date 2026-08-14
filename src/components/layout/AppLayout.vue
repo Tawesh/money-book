@@ -100,8 +100,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import {
   HomeFilled,
@@ -121,6 +121,7 @@ import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
 import EmojiPicker from '@/components/EmojiPicker.vue';
 
 const route = useRoute();
+const router = useRouter();
 const ledgerStore = useLedgerStore();
 const accountStore = useAccountStore();
 const categoryStore = useCategoryStore();
@@ -185,11 +186,27 @@ function openQuickAdd() {
   showQuickAdd.value = true;
 }
 
+/** 托盘“快速记账”：跳转到流水页并打开记账弹窗 */
+let removeQuickAddListener: (() => void) | null = null;
+
+function onTrayQuickAdd() {
+  if (router.currentRoute.value.path !== '/transactions') {
+    router.push('/transactions');
+  }
+  showQuickAdd.value = true;
+}
+
 onMounted(async () => {
   await ledgerStore.load();
   if (ledgerStore.currentId) {
     await refreshStores();
   }
+  // 监听托盘快速记账事件（preload 暴露）
+  removeQuickAddListener = window.moneyBook?.tray?.onQuickAdd?.(onTrayQuickAdd) ?? null;
+});
+
+onUnmounted(() => {
+  removeQuickAddListener?.();
 });
 </script>
 

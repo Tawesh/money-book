@@ -15,6 +15,9 @@ const DEFAULT_SETTINGS: Settings = {
   backup_dir: '',
   backup_enabled: true,
   last_ledger_id: null,
+  tray_enabled: true,
+  close_to_tray: true,
+  minimize_to_tray: false,
 };
 
 // ============ 设置 ============

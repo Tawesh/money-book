@@ -12,6 +12,7 @@ import * as reportService from '../services/report.service';
 import * as budgetService from '../services/budget.service';
 import * as recurringService from '../services/recurring.service';
 import * as systemService from '../services/system.service';
+import * as trayService from '../services/tray.service';
 
 function ok<T>(data: T): ApiResponse<T> {
   return { code: 0, message: 'ok', data };
@@ -127,7 +128,12 @@ export function registerIpcHandlers(): void {
 
   // ===== 系统 =====
   register('moneybook:system:getSettings', () => systemService.getSettings());
-  register('moneybook:system:setSettings', (p) => systemService.setSettings(p as never));
+  register('moneybook:system:setSettings', (p) => {
+    const next = systemService.setSettings(p as never);
+    // 设置变更后同步托盘状态（启用/禁用托盘）
+    trayService.syncTray();
+    return next;
+  });
   register('moneybook:system:export', (p) => {
     const { ledger_id, format } = p as { ledger_id: number; format: 'csv' | 'json' };
     return systemService.exportData(ledger_id, format);

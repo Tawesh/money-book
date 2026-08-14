@@ -64,6 +64,13 @@ const api: MoneyBookApi = {
     selectDirectory: () => invoke('moneybook:system:selectDirectory'),
     getVersion: () => invoke('moneybook:system:getVersion'),
   },
+  tray: {
+    onQuickAdd: (callback) => {
+      const listener = () => callback();
+      ipcRenderer.on('moneybook:tray:quick-add', listener);
+      return () => ipcRenderer.removeListener('moneybook:tray:quick-add', listener);
+    },
+  },
 };
 
 contextBridge.exposeInMainWorld('moneyBook', api);
