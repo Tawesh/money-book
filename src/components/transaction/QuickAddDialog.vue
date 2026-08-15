@@ -223,7 +223,8 @@ async function submit() {
     currency: form.currency,
     happened_at: form.happened_at,
     note: form.note,
-    tags: form.tags,
+    // 展开为普通数组：Vue reactive 数组（Proxy）无法通过 IPC 结构化克隆
+    tags: [...form.tags],
   };
 
   saving.value = true;
