@@ -4,8 +4,14 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { ApiResponse, MoneyBookApi, UpdaterStatus } from '../shared/types';
 
+/**
+ * IPC 调用包装：
+ * - 对 payload 做 JSON 深拷贝，把 Vue 3 reactive/ref（Proxy）对象转为普通对象，
+ *   避免 "An object could not be cloned"（V8 结构化克隆无法克隆 Proxy）
+ */
 async function invoke<T>(channel: string, payload?: unknown): Promise<T> {
-  const res = (await ipcRenderer.invoke(channel, payload)) as ApiResponse<T>;
+  const safePayload = payload === undefined ? undefined : JSON.parse(JSON.stringify(payload));
+  const res = (await ipcRenderer.invoke(channel, safePayload)) as ApiResponse<T>;
   if (res.code !== 0) {
     throw new Error(res.message || '操作失败');
   }
