@@ -10,6 +10,7 @@ import { runDueRecurring } from './services/recurring.service';
 import { getSettings } from './services/system.service';
 import { ensureInitialData } from './services/init.service';
 import * as trayService from './services/tray.service';
+import * as updaterService from './services/updater.service';
 import { runSmokeTest } from './smoke';
 
 let mainWindow: BrowserWindow | null = null;
@@ -120,6 +121,9 @@ app.whenReady().then(() => {
   }
 
   createWindow();
+
+  // 初始化自动更新服务（仅在打包后的正式版本中检查 GitHub Releases）
+  updaterService.initUpdater(mainWindow!);
 
   // 启用系统托盘（根据设置）
   trayService.setRecreateHandler(createWindow);

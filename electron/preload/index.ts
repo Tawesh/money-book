@@ -2,7 +2,7 @@
  * 预加载脚本：通过 contextBridge 暴露白名单 API window.moneyBook
  */
 import { contextBridge, ipcRenderer } from 'electron';
-import type { ApiResponse, MoneyBookApi } from '../shared/types';
+import type { ApiResponse, MoneyBookApi, UpdaterStatus } from '../shared/types';
 
 async function invoke<T>(channel: string, payload?: unknown): Promise<T> {
   const res = (await ipcRenderer.invoke(channel, payload)) as ApiResponse<T>;
@@ -82,6 +82,17 @@ const api: MoneyBookApi = {
       const listener = () => callback();
       ipcRenderer.on('moneybook:tray:quick-add', listener);
       return () => ipcRenderer.removeListener('moneybook:tray:quick-add', listener);
+    },
+  },
+  updater: {
+    check: () => invoke('moneybook:updater:check'),
+    download: () => invoke('moneybook:updater:download'),
+    quitAndInstall: () => invoke('moneybook:updater:quitAndInstall'),
+    getStatus: () => invoke('moneybook:updater:getStatus'),
+    onStatus: (callback) => {
+      const listener = (_event: unknown, status: UpdaterStatus) => callback(status);
+      ipcRenderer.on('moneybook:updater:status', listener);
+      return () => ipcRenderer.removeListener('moneybook:updater:status', listener);
     },
   },
 };

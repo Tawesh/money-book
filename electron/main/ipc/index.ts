@@ -15,6 +15,7 @@ import * as systemService from '../services/system.service';
 import * as trayService from '../services/tray.service';
 import * as currencyService from '../services/currency.service';
 import * as tagService from '../services/tag.service';
+import * as updaterService from '../services/updater.service';
 
 function ok<T>(data: T): ApiResponse<T> {
   return { code: 0, message: 'ok', data };
@@ -198,4 +199,13 @@ export function registerIpcHandlers(): void {
     const pkg = require('../../package.json');
     return pkg.version as string;
   });
+
+  // ===== 自动更新 =====
+  register('moneybook:updater:check', () => updaterService.checkForUpdates());
+  register('moneybook:updater:download', () => updaterService.downloadUpdate());
+  register('moneybook:updater:quitAndInstall', () => {
+    updaterService.quitAndInstall();
+    return null;
+  });
+  register('moneybook:updater:getStatus', () => updaterService.getStatus());
 }

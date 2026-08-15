@@ -243,6 +243,29 @@ export interface Settings {
   minimize_to_tray: boolean;
 }
 
+// ============ 自动更新 ============
+
+export type UpdaterState =
+  | 'idle'
+  | 'checking'
+  | 'available'
+  | 'not-available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error';
+
+export interface UpdaterStatus {
+  state: UpdaterState;
+  /** 远程最新版本 */
+  version?: string;
+  /** 当前本地版本 */
+  currentVersion?: string;
+  /** 下载进度（0-100） */
+  percent?: number;
+  /** 错误信息 */
+  message?: string;
+}
+
 // ============ 前置 API 定义（渲染进程通过 window.moneyBook 调用） ============
 
 export interface MoneyBookApi {
@@ -313,5 +336,17 @@ export interface MoneyBookApi {
   tray: {
     /** 监听托盘“快速记账”：显示主窗口并跳转到记账页。返回取消监听函数 */
     onQuickAdd: (callback: () => void) => () => void;
+  };
+  updater: {
+    /** 检查更新 */
+    check: () => Promise<UpdaterStatus>;
+    /** 下载更新 */
+    download: () => Promise<UpdaterStatus>;
+    /** 退出并安装 */
+    quitAndInstall: () => Promise<void>;
+    /** 获取当前状态 */
+    getStatus: () => Promise<UpdaterStatus>;
+    /** 订阅更新状态事件，返回取消订阅函数 */
+    onStatus: (callback: (status: UpdaterStatus) => void) => () => void;
   };
 }

@@ -113,6 +113,9 @@
 
   <!-- 快捷记账弹窗 -->
   <QuickAddDialog v-if="showQuickAdd" @close="showQuickAdd = false" />
+
+  <!-- 软件自动更新弹窗 -->
+  <UpdateChecker />
 </template>
 
 <script setup lang="ts">
@@ -138,6 +141,7 @@ import { useCategoryStore } from '@/stores/category';
 import { useCurrencyStore } from '@/stores/currency';
 import QuickAddDialog from '@/components/transaction/QuickAddDialog.vue';
 import EmojiPicker from '@/components/EmojiPicker.vue';
+import UpdateChecker from '@/components/UpdateChecker.vue';
 
 const route = useRoute();
 const router = useRouter();

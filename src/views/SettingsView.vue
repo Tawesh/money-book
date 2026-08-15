@@ -133,6 +133,10 @@
             <el-descriptions-item label="版本">v{{ version }}</el-descriptions-item>
             <el-descriptions-item label="数据存储">本地 SQLite（100% 本地）</el-descriptions-item>
           </el-descriptions>
+          <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center">
+            <el-button :loading="checking" @click="checkUpdate">检查更新</el-button>
+            <span class="tip-text">从 GitHub Releases 检查并下载最新版本</span>
+          </div>
         </div>
       </el-col>
     </el-row>
@@ -165,12 +169,14 @@ import { useAppStore } from '@/stores/app';
 import { useLedgerStore } from '@/stores/ledger';
 import { useTransactionStore } from '@/stores/transaction';
 import { useCurrencyStore } from '@/stores/currency';
+import { useUpdaterStore } from '@/stores/updater';
 import type { Settings } from '@shared/types';
 
 const appStore = useAppStore();
 const ledgerStore = useLedgerStore();
 const transactionStore = useTransactionStore();
 const currencyStore = useCurrencyStore();
+const updaterStore = useUpdaterStore();
 
 const settings = ref<Settings | null>(null);
 const theme = ref<'light' | 'dark' | 'system'>('system');
@@ -188,6 +194,17 @@ const version = ref('1.0.2');
 const trayEnabled = ref(true);
 const closeToTray = ref(true);
 const minimizeToTray = ref(false);
+const checking = ref(false);
+
+/** 手动检查更新 */
+async function checkUpdate() {
+  checking.value = true;
+  try {
+    await updaterStore.checkNow();
+  } finally {
+    checking.value = false;
+  }
+}
 
 /** 当前账本基准币种 */
 const ledgerCurrency = computed(() => ledgerStore.current()?.currency ?? 'CNY');
