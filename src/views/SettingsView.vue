@@ -190,7 +190,7 @@ let lockConfirmed = false;
 const backupEnabled = ref(true);
 const backupDir = ref('');
 const backups = ref<string[]>([]);
-const version = ref('1.0.2');
+const version = ref('');
 const trayEnabled = ref(true);
 const closeToTray = ref(true);
 const minimizeToTray = ref(false);
@@ -215,11 +215,16 @@ async function loadSettings() {
   lockEnabled.value = settings.value.app_lock_enabled;
   backupEnabled.value = settings.value.backup_enabled;
   backupDir.value = settings.value.backup_dir;
-  version.value = await window.moneyBook.system.getVersion();
   trayEnabled.value = settings.value.tray_enabled;
   closeToTray.value = settings.value.close_to_tray;
   minimizeToTray.value = settings.value.minimize_to_tray;
   await currencyStore.load();
+  // 版本号单独获取并容错，避免影响其他设置加载
+  try {
+    version.value = await window.moneyBook.system.getVersion();
+  } catch (e) {
+    console.error('获取版本失败:', e);
+  }
 }
 
 function saveTheme() {

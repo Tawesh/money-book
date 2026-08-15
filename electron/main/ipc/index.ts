@@ -2,7 +2,7 @@
  * IPC 路由：将渲染进程的 window.moneyBook.* 调用分发到服务层
  * 统一响应格式 { code, message, data }
  */
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, BrowserWindow, app } from 'electron';
 import type { ApiResponse, TransactionQuery } from '../../shared/types';
 import * as ledgerService from '../services/ledger.service';
 import * as accountService from '../services/account.service';
@@ -194,11 +194,7 @@ export function registerIpcHandlers(): void {
     return systemService.selectFile(win, filters);
   });
   register('moneybook:system:selectDirectory', (_p, win) => systemService.selectDirectory(win));
-  register('moneybook:system:getVersion', () => {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pkg = require('../../package.json');
-    return pkg.version as string;
-  });
+  register('moneybook:system:getVersion', () => app.getVersion());
 
   // ===== 自动更新 =====
   register('moneybook:updater:check', () => updaterService.checkForUpdates());
