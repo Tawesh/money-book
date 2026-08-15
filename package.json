@@ -1,6 +1,6 @@
 {
   "name": "moneybook",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "个人记账本 - 基于 Electron 的本地记账桌面应用",
   "main": "dist-electron/main/index.js",
   "author": "MoneyBook Team",
