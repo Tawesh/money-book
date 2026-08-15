@@ -16,14 +16,18 @@ let initialized = false;
 /** 是否正在下载更新（防止重复下载） */
 let downloading = false;
 
+/** 最近一次状态缓存：锁屏/窗口未就绪期间事件丢失时，渲染进程可同步到最新状态 */
+let lastStatus: UpdaterStatus = { state: 'idle' };
+
 // 不自动下载，先通知渲染进程让用户确认；应用退出时自动安装已下载的更新
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
-/** 向渲染进程推送更新状态事件 */
+/** 向渲染进程推送更新状态事件，并缓存最新状态 */
 function emit(state: UpdaterState, payload: Record<string, unknown> = {}): void {
+  lastStatus = { state, ...payload } as UpdaterStatus;
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('moneybook:updater:status', { state, ...payload });
+    mainWindow.webContents.send('moneybook:updater:status', lastStatus);
   }
 }
 
@@ -138,7 +142,7 @@ export function quitAndInstall(): void {
   autoUpdater.quitAndInstall(false, true);
 }
 
-/** 查询当前更新状态（供渲染进程初始化时同步 UI） */
+/** 查询当前更新状态（供渲染进程初始化时同步 UI，返回缓存的最近状态） */
 export function getStatus(): UpdaterStatus {
-  return { state: 'idle', currentVersion: app.getVersion() };
+  return lastStatus;
 }
