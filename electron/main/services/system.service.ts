@@ -273,6 +273,8 @@ export function setAppLockPassword(password: string): void {
 
 /** 校验解锁口令 */
 export function verifyPassword(password: string): boolean {
+  // 应用锁未启用时直接放行（即使数据库残留 hash，也不应要求密码）
+  if (!isAppLockEnabled()) return true;
   const db = getDb();
   const row = db
     .prepare('SELECT value FROM settings WHERE key = ?')
@@ -287,8 +289,21 @@ export function verifyPassword(password: string): boolean {
 }
 
 export function isAppLockEnabled(): boolean {
+  // 以 app_lock_enabled 设置为准，且必须存在口令 hash 才算真正启用；
+  // 避免"关闭开关后 hash 残留导致启动仍要求密码"的问题
+  const settings = getSettings();
+  if (!settings.app_lock_enabled) return false;
   const db = getDb();
   return !!db.prepare('SELECT value FROM settings WHERE key = ?').get(LOCK_KEY);
+}
+
+/** 关闭应用锁：清除口令 hash/salt 并同步设置 */
+export function disableAppLock(): void {
+  const db = getDb();
+  const del = db.prepare('DELETE FROM settings WHERE key = ?');
+  del.run(LOCK_KEY);
+  del.run(LOCK_SALT);
+  setSettings({ app_lock_enabled: false });
 }
 
 // ============ 文件选择 ============

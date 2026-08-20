@@ -77,6 +77,7 @@ const api: MoneyBookApi = {
     import: (filePath, ledgerId) => invoke('moneybook:system:import', { file_path: filePath, ledger_id: ledgerId }),
     backup: () => invoke('moneybook:system:backup'),
     setAppLock: (password) => invoke('moneybook:system:setAppLock', { password }),
+    disableAppLock: () => invoke('moneybook:system:disableAppLock'),
     unlock: (password) => invoke('moneybook:system:unlock', { password }),
     isLocked: () => invoke('moneybook:system:isLocked'),
     selectFile: (filters) => invoke('moneybook:system:selectFile', { filters }),

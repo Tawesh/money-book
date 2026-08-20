@@ -184,6 +184,7 @@ export function registerIpcHandlers(): void {
     const { password } = p as { password: string };
     return systemService.setAppLockPassword(password);
   });
+  register('moneybook:system:disableAppLock', () => systemService.disableAppLock());
   register('moneybook:system:unlock', (p) => {
     const { password } = p as { password: string };
     return systemService.verifyPassword(password);

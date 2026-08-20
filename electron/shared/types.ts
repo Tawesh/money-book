@@ -327,6 +327,8 @@ export interface MoneyBookApi {
     import: (filePath: string, ledgerId: number) => Promise<{ imported: number; skipped: number }>;
     backup: () => Promise<BackupResult>;
     setAppLock: (password: string) => Promise<void>;
+    /** 关闭应用锁（清除口令并更新设置） */
+    disableAppLock: () => Promise<void>;
     unlock: (password: string) => Promise<boolean>;
     isLocked: () => Promise<boolean>;
     selectFile: (filters: { name: string; extensions: string[] }[]) => Promise<string | null>;

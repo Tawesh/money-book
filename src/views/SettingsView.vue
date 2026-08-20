@@ -306,7 +306,7 @@ async function changeLedgerCurrency(code: string) {
   }
 }
 
-function onLockChange(val: boolean) {
+async function onLockChange(val: boolean) {
   if (val) {
     // 启用：弹窗设置初始密码（未确认前不算真正启用）
     lockConfirmed = false;
@@ -314,8 +314,17 @@ function onLockChange(val: boolean) {
     lockPassword.value = '';
     lockDialogTitle.value = '启用应用锁';
   } else {
-    window.moneyBook.system.setSettings({ app_lock_enabled: false });
-    ElMessage.success('应用锁已关闭');
+    // 关闭：必须清除口令 hash/salt 并同步 app_lock_enabled，
+    // 否则残留的 hash 会导致启动时 isLocked() 仍返回 true
+    try {
+      await window.moneyBook.system.disableAppLock();
+      lockEnabled.value = false;
+      ElMessage.success('应用锁已关闭');
+    } catch (e) {
+      // 关闭失败则回滚开关状态，避免 UI 与真实状态不一致
+      lockEnabled.value = true;
+      ElMessage.error((e as Error).message || '关闭应用锁失败');
+    }
   }
 }
 
